@@ -101,6 +101,13 @@ def extract_events(cfg: configparser.ConfigParser) -> pd.DataFrame | None:
     df["extracted_at"] = now.strftime("%Y-%m-%dT%H:%M:%S")
 
     logger.info(f"Events extracted: {len(df)} rows.")
+
+    null_cols = df.columns[df.isna().all()].tolist()
+    if null_cols:
+        logger.info(f"Dropping completely null columns: {null_cols}")
+        df = df.drop(columns=null_cols)
+
+    logger.info(f"Events extracted: {len(df)} rows.")
     return df
 
 

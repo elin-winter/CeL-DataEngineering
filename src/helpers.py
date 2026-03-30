@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 import boto3
 from botocore.client import Config
 
-METADATA_PATH = "metadata/metadata_ingestion.json"
+METADATA_PATH = "../metadata/metadata_ingestion.json"
 
 
 def setup_logger(name: str = "pipeline", level: int = logging.INFO) -> logging.Logger:
@@ -15,7 +15,7 @@ def setup_logger(name: str = "pipeline", level: int = logging.INFO) -> logging.L
     if not logger.handlers:
         handler = logging.StreamHandler()
         handler.setFormatter(logging.Formatter(
-            "%(asctime)s  %(levelname)-8s  %(filename)s  %(message)s",
+            "%(asctime)s | %(levelname)-8s | %(filename)-20s | %(message)s",
             datefmt="%Y-%m-%d %H:%M:%S",
         ))
         logger.addHandler(handler)
@@ -137,3 +137,25 @@ def setup_all_directories(cfg: configparser.ConfigParser) -> None:
         cfg["datalake"]["contributors_dir"],
     ]:
         ensure_prefix_exists(cfg, f"{bronze}/{api}/{subdir}")
+
+
+def clear_bucket(cfg):
+    endpoint_url = cfg["minio"]["endpoint_url"]
+    access_key   = cfg["minio"]["access_key_id"]
+    secret_key   = cfg["minio"]["secret_access_key"]
+    bucket_name  = cfg["minio"]["bucket_name"]
+
+    s3 = boto3.resource(
+        "s3",
+        endpoint_url=endpoint_url,
+        aws_access_key_id=access_key,
+        aws_secret_access_key=secret_key,
+    )
+
+    bucket = s3.Bucket(bucket_name)
+
+    try:
+        bucket.objects.all().delete()
+    except Exception as e:
+        logger.error(f"❌ Error cleaning bucket: {e}")
+        raise

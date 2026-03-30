@@ -6,6 +6,7 @@ from helpers import (
     load_config,
     build_storage_options,
     setup_all_directories,
+    clear_bucket,
 )
 
 from pipeline_utils import (
@@ -27,6 +28,8 @@ def main():
         sys.exit(1)
 
     storage_options = build_storage_options(cfg)
+
+    clear_bucket(cfg)
 
     try:
         setup_all_directories(cfg)

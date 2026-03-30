@@ -15,6 +15,29 @@ def table_exists(path: str, storage_options: dict) -> bool:
     except TableNotFoundError:
         return False
 
+def create_table_if_not_exists(
+    path: str,
+    df: pd.DataFrame,
+    storage_options: dict,
+    partition_cols: list[str] | None = None,
+):
+    if table_exists(path, storage_options):
+        return
+
+    logger.info(f"Creating table with config: {path}")
+
+    schema = pa.Schema.from_pandas(df)
+
+    DeltaTable.create(
+        path,
+        schema=schema,
+        partition_by=partition_cols,
+        configuration={
+            "delta.deletedFileRetentionDuration": "interval 7 day",
+            "delta.logRetentionDuration": "interval 7 day",
+        },
+        storage_options=storage_options,
+    )
 
 def read_delta(path: str, storage_options: dict) -> pd.DataFrame | None:
     if not table_exists(path, storage_options):
@@ -48,7 +71,7 @@ def delete_insert_delta(
 ) -> None:
     if table_exists(path, storage_options):
         dt = DeltaTable(path, storage_options=storage_options)
-        logger.info(f"Deleting partition: {partition_predicate}")
+        logger.debug(f"Deleting partition: {partition_predicate}")
         dt.delete(predicate=partition_predicate)
         write_deltalake(
             path, df,
@@ -60,6 +83,8 @@ def delete_insert_delta(
         logger.info(f"Inserted {len(df)} rows into {path}")
     else:
         logger.info(f"Table does not exist, creating: {path}")
+        create_table_if_not_exists(path, df, storage_options, partition_cols)
+
         write_deltalake(
             path, df,
             mode="overwrite",
@@ -75,15 +100,19 @@ def append_delta(
     storage_options: dict,
     partition_cols: list[str] | None = None,
 ) -> None:
-    mode = "append" if table_exists(path, storage_options) else "overwrite"
-    schema_mode = "merge" if mode == "append" else "overwrite"
+
+    if not table_exists(path, storage_options):
+        create_table_if_not_exists(path, df, storage_options, partition_cols)
+
     write_deltalake(
+        path,
         pa.Table.from_pandas(df),
-        mode=mode,
+        mode="append",
         storage_options=storage_options,
         partition_by=partition_cols,
-        schema_mode=schema_mode,
+        schema_mode="merge",
     )
+
     logger.info(f"Appended {len(df)} rows to {path}")
 
 
