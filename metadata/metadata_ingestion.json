@@ -1,6 +1,6 @@
 {
   "earthquakes": {
     "incremental_column": "properties.time",
-    "last_value": 0
+    "last_value": 1774833150840
   }
 }

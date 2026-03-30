@@ -7,7 +7,8 @@ from datetime import datetime, timezone
 import boto3
 from botocore.client import Config
 
-METADATA_PATH = "../metadata/metadata_ingestion.json"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+METADATA_PATH = os.path.join(BASE_DIR, "..", "metadata", "metadata_ingestion.json")
 
 
 def setup_logger(name: str = "pipeline", level: int = logging.INFO) -> logging.Logger:

@@ -29,8 +29,6 @@ def main():
 
     storage_options = build_storage_options(cfg)
 
-    clear_bucket(cfg)
-
     try:
         setup_all_directories(cfg)
     except Exception as e:
